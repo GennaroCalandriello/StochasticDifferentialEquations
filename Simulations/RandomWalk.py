@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pylab
 from numba import njit
 
-n = 10000
+n = 1000000
 ThreeD = True
 TwoD = False
 randomJump = True  # instead of increasing or decreasing by 1 -> +- randint(inf, sup)
