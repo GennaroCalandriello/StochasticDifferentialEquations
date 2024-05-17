@@ -1,0 +1,84 @@
+\documentclass[11pt, a4paper]{russell}
+\geometry{left=1.5cm, top=.8cm, right=1.5cm, bottom=1.2cm, footskip=.5cm}
+\fontdir[fonts/]
+% Color for highlights
+% russell Colors: russell-emerald, russell-skyblue, russell-red, russell-pink, russell-orange
+%                 russell-nephritis, russell-concrete, russell-darknight, russell-purple
+\colorlet{russell}{russell-black}
+% Uncomment if you would like to specify your own color
+% \definecolor{russell}{HTML}{CA63A8}
+% Colors for the text
+% Uncomment if you would like to specify your own color
+% \definecolor{darktext}{HTML}{414141}
+% \definecolor{text}{HTML}{333333}
+% \definecolor{graytext}{HTML}{5D5D5D}
+% \definecolor{lighttext}{HTML}{999999}
+
+% Set false if you don't want to highlight the section with russell color
+\setbool{acvSectionColorHighlight}{true}
+
+% If you would like to change the social information separator from a pipe (|) to something else
+\renewcommand{\acvHeaderSocialSep}{\quad\textbar\quad}
+
+
+%-------------------------------------------------------------------------------
+%	PERSONAL INFORMATION
+%	Comment any of the lines below if they are not required
+%-------------------------------------------------------------------------------
+% Available options: circle|rectangle,edge/noedge,left/right
+\photo[circle,edge,left]{low.jpg}
+\name{Paradiso}{Raffaele}
+% \position{Software Architect{\enskip\cdotp\enskip}Security Expert}
+\email{parad.raff@gmail.com}
+%\dateofbirth{January 1st, 1970}
+%\homepage{www.posquit0.com}
+\github{github.com/RaffaeleParadiso}
+\linkedin{linkedin.com/in/RaffaeleParadiso}
+% \gitlab{gitlab-id}
+% \stackoverflow{SO-id}{SO-name}
+% \twitter{@twit}
+% \skype{skype-id}
+% \reddit{reddit-id}
+% \medium{madium-id}
+% \kaggle{kaggle-id}
+% \googlescholar{googlescholar-id}{name-to-display}
+%% \firstname and \lastname will be used
+% \googlescholar{googlescholar-id}{}
+% \extrainfo{extra information}
+
+\quote{``Simplicity is deceptively complicated."}
+
+
+%-------------------------------------------------------------------------------
+\begin{document}
+
+% Print the header with the above personal information
+% Give optional argument to change alignment(C: center, L: left, R: right)
+\makecvheader
+
+% Print the footer with 3 arguments(<left>, <center>, <right>)
+% Leave any of these blank if they are not needed
+\makecvfooter
+  {\today}
+  {}
+  {\thepage}
+
+\input{cv/summary.tex}
+\vspace{-3mm}
+\input{cv/education.tex}
+% \input{cv/experience.tex}
+\vspace{-2mm}
+\input{cv/projects.tex}
+\vspace{-4mm}
+\input{cv/skills.tex}
+% \newpage
+\vspace{-4mm}
+\input{cv/interests.tex}
+\vspace{-4mm}
+\input{cv/languages.tex}
+
+\vspace*{\fill}
+% \centering{Autorizzo il trattamento dei miei dati personali ai sensi del Dlgs 196 del 30 giugno 2003 e dell’art. 13 GDPR (Regolamento UE 2016/679) ai fini della ricerca e selezione del personale.}
+\footnotesize{Autorizzo il trattamento dei miei dati personali presenti nel CV ai sensi dell’art. 13 d. lgs. 30 giugno 2003 n. 196 - “Codice in materia di protezione dei dati personali” e dell’art. 13 GDPR 679/2016 - “Regolamento europeo sulla protezione dei dati personali”. }
+%-------------------------------------------------------------------------------
+\end{document}
