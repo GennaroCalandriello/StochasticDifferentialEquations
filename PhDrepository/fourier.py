@@ -1,97 +1,89 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+import numpy as np
+import matplotlib.pyplot as plt
 
-class FourierVolatilityEstimator:
-    def __init__(self, p, sigma2, T=2 * np.pi, N=1000, mu_func=None, sigma_func=None):
-        self.T = T
-        self.N = N
-        self.dt = T / N
-        self.t = np.linspace(0, T, N + 1)
-        self.p = p
-        self.sigma2 = sigma2
-        self.mu_func = mu_func if mu_func is not None else lambda t: 0.1
-        self.sigma_func = sigma_func if sigma_func is not None else lambda t: 0.1
-        self.a0_p = None
-        self.a0_sigma2 = None
-        self.a_p = None
-        self.b_p = None
-        self.a_sigma2 = None
-        self.b_sigma2 = None
+theta = 0.035  # parameter estimated by Andersen and Bollerslev (1998a)
+omega = 0.636  # parameter estimated by Andersen and Bollerslev (1998a)
+lambda_ = 0.296  # parameter estimated by Andersen and Bollerslev (1998a)
+T = 1.0  # time horizon (1 day)
+N = 10000  # number of time steps (1 second intervals)
+p0 = 0.0  # initial value of log-price p(t)
+sigma0 = 0.2  # initial value of volatility sigma(t)
+mean_duration = 14
 
-    def compute_fourier_coefficients(self):
-        print("Computing Fourier coefficients...")
-        N = self.N
-        t = self.t
-        p = self.p
-        sigma = self.sigma_func
 
-        dt = np.diff(t)
-        d_p = np.diff(p)
+def compute_fourier_coefficients(t, p, sigma):
+    print("Computing Fourier coefficients...")
 
-        self.a0_p = (1 / (2 * np.pi)) * np.sum(d_p)
-        self.a0_sigma2 = (1 / (2 * np.pi)) * np.sum(sigma(t[:-1]) ** 2 * dt)
+    dt = np.diff(t)
+    d_p = np.diff(p)
 
-        a_p = []
-        b_p = []
-        a_sigma2 = []
-        b_sigma2 = []
+    a0_p = (1 / (2 * np.pi)) * np.sum(d_p)
+    a0_sigma2 = (1 / (2 * np.pi)) * np.sum(sigma[:-1] ** 2 * dt)
 
-        for k in range(1, N + 1):
-            if k % 10 == 0:
-                print(f"Computing Fourier coefficients for k={k}")
-            a_p.append((1 / np.pi) * np.sum(np.cos(k * t[:-1]) * d_p))
-            b_p.append((1 / np.pi) * np.sum(np.sin(k * t[:-1]) * d_p))
-            a_sigma2.append(
-                (1 / np.pi) * np.sum(np.cos(k * t[:-1]) * sigma(t[:-1]) ** 2 * dt)
-            )
-            b_sigma2.append(
-                (1 / np.pi) * np.sum(np.sin(k * t[:-1]) * sigma(t[:-1]) ** 2 * dt)
-            )
+    a_p = []
+    b_p = []
+    a_sigma2 = []
+    b_sigma2 = []
 
-        self.a_p = np.array(a_p)
-        self.b_p = np.array(b_p)
-        self.a_sigma2 = np.array(a_sigma2)
-        self.b_sigma2 = np.array(b_sigma2)
+    for k in range(1, N + 1):
+        if k % 10 == 0:
+            print(f"Computing Fourier coefficients for k={k}")
+        a_p.append((1 / np.pi) * np.sum(np.cos(k * t[:-1]) * d_p))
+        b_p.append((1 / np.pi) * np.sum(np.sin(k * t[:-1]) * d_p))
+        a_sigma2.append((1 / np.pi) * np.sum(np.cos(k * t[:-1]) * sigma[:-1] ** 2 * dt))
+        b_sigma2.append((1 / np.pi) * np.sum(np.sin(k * t[:-1]) * sigma[:-1] ** 2 * dt))
 
-    def reconstruct_sigma2(self, M=None):
-        if M is None:
-            M = self.N // 2
+    a_p = np.array(a_p)
+    b_p = np.array(b_p)
+    a_sigma2 = np.array(a_sigma2)
+    b_sigma2 = np.array(b_sigma2)
 
-        t = self.t
-        a0 = self.a0_sigma2
-        a_k = self.a_sigma2
-        b_k = self.b_sigma2
+    return a0_p, a0_sigma2, a_p, b_p, a_sigma2, b_sigma2
 
-        sigma2 = np.full_like(t, a0)
-        for k in range(1, M + 1):
-            if k % 10 == 0:
-                print(f"Reconstructing sigma2 for k={k}")
-            sigma2 += (1 - k / M) * (
-                a_k[k - 1] * np.cos(k * t) + b_k[k - 1] * np.sin(k * t)
-            )
-        return sigma2
 
-    def plot_results(self, sigma2_reconstructed):
-        plt.figure(figsize=(12, 6))
+def reconstruct_sigma2(t, p, sigma):
+    a0_p, a0_sigma2, a_p, b_p, a_sigma2, b_sigma2 = compute_fourier_coefficients(
+        t, p, sigma
+    )
+    M = N // 2
 
-        plt.subplot(2, 1, 1)
-        plt.plot(self.t, self.p, label="$p(t)$")
-        plt.title("Simulated Log-Price $p(t)$")
-        plt.xlabel("Time")
-        plt.ylabel("$p(t)$")
-        plt.legend()
+    a_k = a_sigma2
+    b_k = b_sigma2
 
-        plt.subplot(2, 1, 2)
-        plt.plot(self.t, self.sigma2, label="True $\sigma^2(t)$", linestyle="--")
-        plt.plot(self.t, sigma2_reconstructed, label="Reconstructed $\sigma^2(t)$")
-        plt.title("Reconstructed $\sigma^2(t)$ using Fourier-Fejer formula")
-        plt.xlabel("Time")
-        plt.ylabel("$\sigma^2(t)$")
-        plt.legend()
+    # sigma2 = np.full_like(t, a0_p)
+    sigma2 = []
+    for k in range(1, M + 1):
+        if k % 10 == 0:
+            print(f"Reconstructing sigma2 for k={k}")
+        sigma2.append(
+            (1 - k / M) * (a_k[k - 1] * np.cos(k * t) + b_k[k - 1] * np.sin(k * t))
+        )
+    return np.array(sigma2), a0_sigma2, a_sigma2, b_sigma2, a0_p, a_p, b_p
 
-        plt.tight_layout()
-        plt.show()
+
+def plot_results(self, sigma2_reconstructed):
+    plt.figure(figsize=(12, 6))
+
+    plt.subplot(2, 1, 1)
+    plt.plot(self.t, self.p, label="$p(t)$")
+    plt.title("Simulated Log-Price $p(t)$")
+    plt.xlabel("Time")
+    plt.ylabel("$p(t)$")
+    plt.legend()
+
+    plt.subplot(2, 1, 2)
+    plt.plot(self.t, self.sigma2, label="True $\sigma^2(t)$", linestyle="--")
+    plt.plot(self.t, sigma2_reconstructed, label="Reconstructed $\sigma^2(t)$")
+    plt.title("Reconstructed $\sigma^2(t)$ using Fourier-Fejer formula")
+    plt.xlabel("Time")
+    plt.ylabel("$\sigma^2(t)$")
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
 
 
 # # Example Usage

@@ -86,11 +86,11 @@ def main():
     print("Cumulative Intraday Returns:", cumulative_intraday_returns)
     print("Fourier Integrated Volatility:", fourier_integrated_volatility)
 
-    estimator = FourierVolatilityEstimator(p, sigma2, T, N)
-    estimator.compute_fourier_coefficients()
-    sigma2_reconstructed = estimator.reconstruct_sigma2()
-    estimator.plot_results(sigma2_reconstructed)
-
+    # estimation via Fourier
+    sigma2prime, a0_sigma2, a_sigma2, b_sigma2, a0_p, a_p, b_p = reconstruct_sigma2(
+        t, p, sigma2
+    )
+    sum_sigma2 = np.sum(sigma2prime, axis=0)
     # Plotting the results
     plt.figure(figsize=(14, 7))
 
@@ -106,7 +106,8 @@ def main():
     plt.legend()
 
     plt.subplot(2, 1, 2)
-    plt.plot(t, sigma2, label="$\sigma^2(t)$", color="r")
+    plt.plot(t, sum_sigma2 * 10 + 0.03, label="$\sigma^2(t)$", color="r")
+    plt.plot(t, sigma2, label="True $\sigma^2(t)$", linestyle="--")
     plt.xlabel("Time (seconds)")
     plt.ylabel("Variance $\sigma^2(t)$")
     plt.xlim(0, T)
@@ -119,6 +120,9 @@ def main():
     # sigma2 = np.diff(p) ** 2
     plt.hist(sigma2, bins=50, color="r", alpha=0.5, label="True $\sigma^2(t)$")
     plt.show()
+
+    # print("The difference between the two sigma calculated: ", sum_sigma2 - sigma2)
+    # print("The ratio between the two sigma calculated: ", sum_sigma2 / sigma2)
 
 
 if __name__ == "__main__":
