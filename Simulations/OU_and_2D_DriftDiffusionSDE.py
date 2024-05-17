@@ -23,7 +23,7 @@ def OU(max_time, sigma, steps, theta):
     plt.show()
 
 
-def TwoDimDiffusionProcess(max_time, steps, correlated=True):
+def TwoDimDiffusionProcess(max_time, steps, correlated=False):
 
     """We're talking about the following system:
     
