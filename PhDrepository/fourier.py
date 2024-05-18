@@ -12,6 +12,7 @@ N = 10000  # number of time steps (1 second intervals)
 p0 = 0.0  # initial value of log-price p(t)
 sigma0 = 0.2  # initial value of volatility sigma(t)
 mean_duration = 14
+F_coeff = 2000
 
 
 def compute_fourier_coefficients(t, p, sigma):
@@ -28,14 +29,14 @@ def compute_fourier_coefficients(t, p, sigma):
     a_sigma2 = []
     b_sigma2 = []
 
-    for k in range(1, N + 1):
-        if k % 10 == 0:
+    for k in range(1, F_coeff):
+        if k % 1000 == 0:
             print(f"Computing Fourier coefficients for k={k}")
         a_p.append((1 / np.pi) * np.sum(np.cos(k * t[:-1]) * d_p))
         b_p.append((1 / np.pi) * np.sum(np.sin(k * t[:-1]) * d_p))
         a_sigma2.append((1 / np.pi) * np.sum(np.cos(k * t[:-1]) * sigma[:-1] ** 2 * dt))
         b_sigma2.append((1 / np.pi) * np.sum(np.sin(k * t[:-1]) * sigma[:-1] ** 2 * dt))
-
+    print("Fourier coefficients computed successfully!", a_sigma2, b_sigma2)
     a_p = np.array(a_p)
     b_p = np.array(b_p)
     a_sigma2 = np.array(a_sigma2)
@@ -48,42 +49,21 @@ def reconstruct_sigma2(t, p, sigma):
     a0_p, a0_sigma2, a_p, b_p, a_sigma2, b_sigma2 = compute_fourier_coefficients(
         t, p, sigma
     )
-    M = N // 2
+    M = N
 
     a_k = a_sigma2
     b_k = b_sigma2
 
     # sigma2 = np.full_like(t, a0_p)
     sigma2 = []
-    for k in range(1, M + 1):
-        if k % 10 == 0:
+    for k in range(1, F_coeff):
+        if k % 1000 == 0:
             print(f"Reconstructing sigma2 for k={k}")
         sigma2.append(
             (1 - k / M) * (a_k[k - 1] * np.cos(k * t) + b_k[k - 1] * np.sin(k * t))
         )
+    print("sigma2 shape", np.array(sigma2).shape)
     return np.array(sigma2), a0_sigma2, a_sigma2, b_sigma2, a0_p, a_p, b_p
-
-
-def plot_results(self, sigma2_reconstructed):
-    plt.figure(figsize=(12, 6))
-
-    plt.subplot(2, 1, 1)
-    plt.plot(self.t, self.p, label="$p(t)$")
-    plt.title("Simulated Log-Price $p(t)$")
-    plt.xlabel("Time")
-    plt.ylabel("$p(t)$")
-    plt.legend()
-
-    plt.subplot(2, 1, 2)
-    plt.plot(self.t, self.sigma2, label="True $\sigma^2(t)$", linestyle="--")
-    plt.plot(self.t, sigma2_reconstructed, label="Reconstructed $\sigma^2(t)$")
-    plt.title("Reconstructed $\sigma^2(t)$ using Fourier-Fejer formula")
-    plt.xlabel("Time")
-    plt.ylabel("$\sigma^2(t)$")
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
 
 
 # # Example Usage
