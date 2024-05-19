@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from fourier import *
 
 # theta = 0.035  # parameter estimated by Andersen and Bollerslev (1998a)
 # omega = 0.636  # parameter estimated by Andersen and Bollerslev (1998a)
@@ -11,6 +10,16 @@ from fourier import *
 # sigma0 = 0.2  # initial value of volatility sigma(t)
 # mean_duration = 14
 # F_coeff = 1000
+
+theta = 0.035  # parameter estimated by Andersen and Bollerslev (1998a)
+omega = 0.636  # parameter estimated by Andersen and Bollerslev (1998a)
+lambda_ = 0.296  # parameter estimated by Andersen and Bollerslev (1998a)
+T = 1.0  # time horizon (1 day)
+N = 10000  # number of time steps (1 second intervals)
+p0 = 0.0  # initial value of log-price p(t)
+sigma0 = 0.2  # initial value of volatility sigma(t)
+mean_duration = 14
+F_coeff = 10000
 
 
 def simulate_paths(T, N, theta, omega, lambda_, p0, sigma0):
@@ -30,7 +39,64 @@ def simulate_paths(T, N, theta, omega, lambda_, p0, sigma0):
             + np.sqrt(2 * lambda_ * theta) * sigma2[i - 1] * dW2[i - 1]
         )
         p[i] = p[i - 1] + np.sqrt(sigma2[i - 1]) * dW1[i - 1] + mu * dt
-    return t, p, sigma2
+
+    return t, p, np.sqrt(np.array(sigma2))
+
+
+def compute_fourier_coefficients(t, p, sigma):
+    print("Computing Fourier coefficients...")
+
+    dt = np.diff(t)
+    dp = np.diff(p)
+
+    a0_p = (1 / (2 * np.pi)) * np.sum(dp)
+    a0_sigma2 = (1 / (2 * np.pi)) * np.sum(sigma[:-1] ** 2 * dt)
+
+    a_p = []
+    b_p = []
+    a_sigma2 = []
+    b_sigma2 = []
+
+    for k in range(1, N + 1):
+        if k % 1000 == 0:
+            print(f"Computing Fourier coefficients for k={k}")
+        cos_kt = np.cos(k * t[:-1])
+        sin_kt = np.sin(k * t[:-1])
+        a_p.append((1 / np.pi) * np.sum(cos_kt * dp))
+        b_p.append((1 / np.pi) * np.sum(sin_kt * dp))
+        a_sigma2.append((1 / np.pi) * np.sum(cos_kt * sigma[:-1] ** 2 * dt))
+        b_sigma2.append((1 / np.pi) * np.sum(sin_kt * sigma[:-1] ** 2 * dt))
+
+    print(
+        "Fourier coefficients computed successfully for the univariate case!",
+        a_sigma2,
+        b_sigma2,
+    )
+    a_p = np.array(a_p)
+    b_p = np.array(b_p)
+    a_sigma2 = np.array(a_sigma2)
+    b_sigma2 = np.array(b_sigma2)
+
+    return a0_p, a0_sigma2, a_p, b_p, a_sigma2, b_sigma2
+
+
+def Fourier_analysis():
+    t, p, sigma = simulate_paths(T, N, theta, omega, lambda_, p0, sigma0)
+    a0_p, a0_sigma2, a_p, b_p, a_sigma2, b_sigma2 = compute_fourier_coefficients(
+        t, p, sigma
+    )
+    M = N
+
+    sigma_sq_prime = np.full((N + 1,), a0_sigma2)
+
+    for k in range(1, M + 1):
+        if k % 100 == 0:
+            print(f"Reconstructing sigma_sq for k={k} univariate case")
+        sigma_sq_prime += (1 - k / M) * (
+            a_sigma2[k - 1] * np.cos(k * t) + b_sigma2[k - 1] * np.sin(k * t)
+        )
+
+    return sigma_sq_prime, t, p, sigma**2
 
 
 def unevenly_sampled_times(T, mean_duration):
@@ -71,7 +137,7 @@ def fourier_estimator(t, p):
 def main():
 
     # Simulate paths
-    t, p, sigma2 = simulate_paths(T, N, theta, omega, lambda_, p0, sigma0)
+    sigma_sq_fourier, t, p, sigma_sq = Fourier_analysis()
 
     # Unevenly sampled times
     uneven_times = unevenly_sampled_times(T, mean_duration)
@@ -89,19 +155,19 @@ def main():
     print("Fourier Integrated Volatility:", fourier_integrated_volatility)
 
     # estimation via Fourier
-    sigma = np.sqrt(sigma2)
-    sigma2prime, a0_sigma2, a_sigma2, b_sigma2, a0_p, a_p, b_p = reconstruct_sigma2(
-        t, p, sigma
-    )
-    sum_sigma2 = np.sum(sigma2prime, axis=0)
+    sigma = np.sqrt(sigma_sq)
+    # sigma2prime, a0_sigma2, a_sigma2, b_sigma2, a0_p, a_p, b_p = Fourier_analysis()
+    sum_sigma_sq = np.sum(sigma_sq)
+    print("Sum of sigma_sq:", sum_sigma_sq)
+
     # Plotting the results
     plt.figure(figsize=(14, 7))
 
     plt.subplot(2, 1, 1)
     plt.plot(t, p, label="Log-Price $p(t)$")
-    plt.scatter(
-        uneven_times, uneven_p, color="red", s=1, label="Unevenly Sampled $p(t)$"
-    )
+    # plt.scatter(
+    #     uneven_times, uneven_p, color="red", s=1, label="Unevenly Sampled $p(t)$"
+    # )
     plt.title("Log-Price and Variance Process Simulation (Euler-Maruyama Method)")
     plt.xlabel("Time (seconds)")
     plt.ylabel("Log-Price")
@@ -109,8 +175,8 @@ def main():
     plt.legend()
 
     plt.subplot(2, 1, 2)
-    plt.plot(t, sum_sigma2, label="$\sigma^2(t)$", color="r", linestyle="-")
-    plt.plot(t, sigma2, label="True $\sigma^2(t)$", linestyle="-")
+    plt.plot(t, sigma_sq, label=" true $\sigma^2(t)$", color="r", linestyle="-")
+    plt.plot(t, sigma_sq_fourier, label="Fourier $\sigma^2(t)$", linestyle="-")
     plt.xlabel("Time (seconds)")
     plt.ylabel("Variance $\sigma^2(t)$")
     plt.xlim(0, T)
@@ -126,8 +192,7 @@ def main():
     # plt.show()
 
     print("Biased: ", np.sum(np.diff(p) ** 2))
-    print("Unbiased: ", np.sum(sum_sigma2) / N)
-    print(sum_sigma2 - sigma2)
+    print("Unbiased: ", np.sum(sum_sigma_sq) / N)
 
 
 if __name__ == "__main__":
